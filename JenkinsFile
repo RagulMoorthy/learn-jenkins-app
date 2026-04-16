@@ -58,18 +58,25 @@ pipeline {
                         sh '''
                             rm -rf test-results || true
                             mkdir -p test-results
+
                             npm install serve
                             node_modules/.bin/serve -s build &
+                            SERVER_PID=$!
+
                             sleep 10
+
                             PLAYWRIGHT_JUNIT_OUTPUT_NAME=results.xml \
                             npx playwright test --reporter=junit --output=test-results
+
+                            kill $SERVER_PID || true
+                            
                             ls -la test-results
                         '''
                     }
 
                     post {
                         always {
-                            junit 'test-results/*.xml'
+                            junit allowEmptyResults: true, testResults: 'test-results/*.xml'
                         }
                     }
                 }
