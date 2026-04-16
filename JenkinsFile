@@ -56,10 +56,12 @@ pipeline {
 
                     steps {
                         sh '''
+                            rm -rf test-results || true
                             npm install serve
                             node_modules/.bin/serve -s build &
                             sleep 10
-                            npx playwright test --reporter=html
+                            npx playwright test --reporter=junit > test-results/results.xml
+                            ls -la test-results
                         '''
                     }
 
