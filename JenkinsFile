@@ -34,13 +34,14 @@ pipeline {
 
                     steps {
                         sh '''
-                            #test -f build/index.html
+                            rm -rf test-results || true
                             npm test
+                            ls -la test-results
                         '''
                     }
                     post {
                         always {
-                            junit 'jest-results/junit.xml'
+                            junit 'test-results/*.xml'
                         }
                     }
                 }
@@ -58,7 +59,7 @@ pipeline {
                             npm install serve
                             node_modules/.bin/serve -s build &
                             sleep 10
-                            npx playwright test  --reporter=html
+                            npx playwright test --reporter=html
                         '''
                     }
 
