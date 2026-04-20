@@ -121,6 +121,8 @@ pipeline {
 
     steps {
                 sh '''
+                    echo "Testing Production URL: $CI_ENVIRONMENT_URL"
+                    sleep 20
                     npx playwright test --reporter=html
                     '''
     }
