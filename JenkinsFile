@@ -34,12 +34,12 @@ pipeline {
 
                     steps {
                         sh '''
-                            #test -f build/index.html
-                            npm test
+                            npm test -- --reporters=default --reporters=jest-junit
                         '''
                     }
                     post {
                         always {
+                            // Correct path for Jest JUnit output
                             junit 'test-results/junit.xml'
                         }
                     }
@@ -56,15 +56,20 @@ pipeline {
                     steps {
                         sh '''
                             npm install serve
-                            node_modules/.bin/serve -s build &
-                            sleep 10
-                            npx playwright test  --reporter=html
+                            nohup npx serve -s build &   # start the app
+                            sleep 10                     # wait for server
+                            npx playwright test --reporter=html
                         '''
                     }
 
                     post {
                         always {
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright HTML Report', reportTitles: '', useWrapperFileDirectly: true])
+                            // Publish Playwright HTML report
+                            publishHTML([
+                                reportDir: 'playwright-report',
+                                reportFiles: 'index.html',
+                                reportName: 'Playwright Test Report'
+                            ])
                         }
                     }
                 }
