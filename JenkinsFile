@@ -85,7 +85,30 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy Staging') {
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh '''
+                    npm install netlify-cli
+                    node_modules/.bin/netlify --version
+                    echo "Deploying to staging. Site ID: $NETLIFY_SITE_ID"
+                    node_modules/.bin/netlify status
+                    DEPLOY_OUTPUT=$(node_modules/.bin/netlify deploy --dir=build --no-build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN)
+                    echo "$DEPLOY_OUTPUT"
+                    SITE_URL=$(echo "$DEPLOY_OUTPUT" | grep "https://" | head -1)
+                    echo "================================="
+                    echo "LIVE WEBSITE: $SITE_URL"
+                    echo "================================="
+                '''
+            }
+        }
+
+        stage('Deploy Prod') {
             agent {
                 docker {
                     image 'node:18-alpine'
