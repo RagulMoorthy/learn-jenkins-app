@@ -105,8 +105,46 @@ pipeline {
                     echo "LIVE WEBSITE: $SITE_URL"
                     echo "================================="
                 '''
+                script{
+                    env.STAGING_URL = sh(script:"node_modules/.bin/node-jq -r '.deploy_url' deploy-output.json", returnStdout: true)
+                }
             }
         }
+
+        stage('Staging E2E') {
+            agent {
+                docker {
+                    image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
+                    reuseNode true
+        }
+    }
+
+            environment {
+                CI_ENVIRONMENT_URL = "${env.STAGING_URL}"
+            }
+
+    steps {
+                sh '''
+                    echo "Testing Production URL: $CI_ENVIRONMENT_URL"
+                    sleep 20
+                    npx playwright test --reporter=html
+                    '''
+    }
+
+    post {
+                always {
+                 // Publish Playwright HTML report
+                    publishHTML([
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'staging-report',
+                    reportFiles: 'index.html',
+                    reportName: 'Playwright E2E'
+            ])
+        }
+    }
+}        
 
         stage('Approval') {
             steps {
@@ -165,7 +203,7 @@ pipeline {
                     allowMissing: false,
                     alwaysLinkToLastBuild: true,
                     keepAll: true,
-                    reportDir: 'playwright-report',
+                    reportDir: 'prod-report',
                     reportFiles: 'index.html',
                     reportName: 'Playwright E2E'
             ])
