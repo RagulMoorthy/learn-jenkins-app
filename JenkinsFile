@@ -127,7 +127,7 @@ pipeline {
                 sh '''
                     echo "Testing Production URL: $CI_ENVIRONMENT_URL"
                     sleep 20
-                    npx playwright test --reporter=html
+                    PLAYWRIGHT_HTML_REPORT=staging-report npx playwright test --reporter=html
                     '''
     }
 
@@ -192,7 +192,7 @@ pipeline {
                 sh '''
                     echo "Testing Production URL: $CI_ENVIRONMENT_URL"
                     sleep 20
-                    npx playwright test --reporter=html
+                    PLAYWRIGHT_HTML_REPORT=prod-report npx playwright test --reporter=html
                     '''
     }
 
