@@ -153,30 +153,7 @@ pipeline {
                 }
             }
         }
-
         stage('Deploy Prod') {
-            agent {
-                docker {
-                    image 'node:18-alpine'
-                    reuseNode true
-                }
-            }
-            steps {
-                sh '''
-                    npm install netlify-cli
-                    node_modules/.bin/netlify --version
-                    echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
-                    node_modules/.bin/netlify status
-                    DEPLOY_OUTPUT=$(node_modules/.bin/netlify deploy --dir=build --prod --no-build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN)
-                    echo "$DEPLOY_OUTPUT"
-                    SITE_URL=$(echo "$DEPLOY_OUTPUT" | grep "https://" | head -1)
-                    echo "================================="
-                    echo "LIVE WEBSITE: $SITE_URL"
-                    echo "================================="
-                '''
-            }
-        }
-        stage('Prod E2E') {
             agent {
                 docker {
                     image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
@@ -190,6 +167,17 @@ pipeline {
 
     steps {
                 sh '''
+                    node --version
+                    npm install netlify-cli
+                    node_modules/.bin/netlify --version
+                    echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
+                    node_modules/.bin/netlify status
+                    DEPLOY_OUTPUT=$(node_modules/.bin/netlify deploy --dir=build --prod --no-build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN)
+                    echo "$DEPLOY_OUTPUT"
+                    SITE_URL=$(echo "$DEPLOY_OUTPUT" | grep "https://" | head -1)
+                    echo "================================="
+                    echo "LIVE WEBSITE: $SITE_URL"
+                    echo "================================="
                     echo "Testing Production URL: $CI_ENVIRONMENT_URL"
                     sleep 20
                     PLAYWRIGHT_HTML_REPORT=prod-report npx playwright test --reporter=html
