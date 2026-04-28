@@ -140,7 +140,7 @@ pipeline {
                     keepAll: true,
                     reportDir: 'staging-report',
                     reportFiles: 'index.html',
-                    reportName: 'Playwright E2E'
+                    reportName: 'Staging E2E'
             ])
         }
     }
@@ -205,7 +205,7 @@ pipeline {
                     keepAll: true,
                     reportDir: 'prod-report',
                     reportFiles: 'index.html',
-                    reportName: 'Playwright E2E'
+                    reportName: 'Prod E2E'
             ])
         }
     }
