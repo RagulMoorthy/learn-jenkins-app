@@ -123,7 +123,7 @@ pipeline {
 
     post {
                 always {
-                 // Publish Playwright HTML report
+                 // Publish Playwright HTML report data
                     publishHTML([
                     allowMissing: true,
                     alwaysLinkToLastBuild: true,
