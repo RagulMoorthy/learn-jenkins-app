@@ -90,94 +90,106 @@ pipeline {
             }
         }
 
+
         stage('Deploy Staging') {
+            options {
+                timeout(time: 5, unit: 'MINUTES')
+            }
             agent {
                 docker {
                     image 'my-playwright'
                     reuseNode true
-        }
-    } 
-            environment {
-                CI_ENVIRONMENT_URL = 'STAGING_URL_TO_BE_SET'
-            }  
-
-    steps {
-                sh '''
-                    netlify --version
-                    echo "Deploying to staging. Site ID: $NETLIFY_SITE_ID"
-                    netlify status
-                    netlify deploy --dir=build --no-build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN --json > deploy-output.json
-                    SITE_URL=$(node-jq -r '.deploy_url' deploy-output.json)
-                    echo "$SITE_URL"
-                    echo "================================="
-                    echo "LIVE WEBSITE: $SITE_URL"
-                    echo "================================="
-                    echo "Testing Production URL: $CI_ENVIRONMENT_URL"
-                    CI_ENVIRONMENT_URL=$(node_modules/.bin/node-jq -r '.deploy_url' deploy-output.json)
-                    sleep 20
-                    mkdir -p staging-report
-                    PLAYWRIGHT_HTML_REPORT=staging-report npx playwright test --reporter=html || true
-                    '''
-    }
-
-    post {
-                always {
-                 // Publish Playwright HTML report data
-                    publishHTML([
-                    allowMissing: true,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: 'staging-report',
-                    reportFiles: 'index.html',
-                    reportName: 'Staging E2E'
-            ])
-        }
-    }
-}        
-        stage('Deploy Prod') {
-            agent {
-                docker {
-                    image 'my-playwright'
-                    reuseNode true
-        }
-    }
-
-            environment {
-                CI_ENVIRONMENT_URL = 'https://lively-caramel-b2371f007.netlify.app'
+                }
             }
 
-    steps {
+            steps {
                 sh '''
-                    node --version
-                    netlify --version
-                    echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
-                    netlify status
-                    netlify deploy --dir=build --prod --no-build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN)
-                    echo "$DEPLOY_OUTPUT"
-                    SITE_URL=$(echo "$DEPLOY_OUTPUT" | grep "https://" | head -1)
-                    echo "================================="
-                    echo "LIVE WEBSITE: $SITE_URL"
-                    echo "================================="
-                    echo "Testing Production URL: $CI_ENVIRONMENT_URL"
-                    sleep 20
-                    mkdir -p prod-report
-                    PLAYWRIGHT_HTML_REPORT=prod-report npx playwright test --reporter=html || true
-                    '''
-    }
+                    echo "===== STAGING DEPLOY START ====="
 
-    post {
+                    netlify --version
+                    netlify status
+
+                    netlify deploy \
+                    --dir=build \
+                    --no-build \
+                    --site=$NETLIFY_SITE_ID \
+                    --auth=$NETLIFY_AUTH_TOKEN \
+                    --json > deploy-output.json 2>&1 || true
+
+                    echo "===== DEPLOY OUTPUT ====="
+                    cat deploy-output.json
+
+                    SITE_URL=$(node-jq -r '.deploy_url' deploy-output.json)
+                    echo "STAGING URL: $SITE_URL"
+
+                    echo "===== RUNNING E2E ON STAGING ====="
+                    sleep 10
+
+                    mkdir -p staging-report
+                    timeout 120 npx playwright test --reporter=html || true
+                '''
+            }
+
+            post {
                 always {
-                 // Publish Playwright HTML report
                     publishHTML([
-                    allowMissing: true,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: 'prod-report',
-                    reportFiles: 'index.html',
-                    reportName: 'Prod E2E'
-            ])
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'staging-report',
+                        reportFiles: 'index.html',
+                        reportName: 'Staging E2E'
+                    ])
+                }
+            }
+        }        
+        stage('Deploy Prod') {
+            options {
+                timeout(time: 5, unit: 'MINUTES')
+            }
+            agent {
+                docker {
+                    image 'my-playwright'
+                    reuseNode true
+                }
+            }
+
+            steps {
+                sh '''
+                    echo "===== PROD DEPLOY START ====="
+
+                    netlify --version
+                    netlify status
+
+                    DEPLOY_OUTPUT=$(netlify deploy \
+                    --dir=build \
+                    --prod \
+                    --no-build \
+                    --site=$NETLIFY_SITE_ID \
+                    --auth=$NETLIFY_AUTH_TOKEN)
+
+                    echo "$DEPLOY_OUTPUT"
+
+                    echo "===== RUNNING E2E ON PROD ====="
+                    sleep 10
+
+                    mkdir -p prod-report
+                    timeout 120 npx playwright test --reporter=html || true
+                '''
+            }
+
+            post {
+                always {
+                    publishHTML([
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'prod-report',
+                        reportFiles: 'index.html',
+                        reportName: 'Prod E2E'
+                    ])
+                }
+            }
         }
-    }
-}
     }
 }
