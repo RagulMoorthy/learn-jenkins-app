@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        NETLIFY_SITE_ID = 'YOUR NETLIFY SITE ID'
+        NETLIFY_SITE_ID = 'dd3c018b-6ece-40d6-8a5f-4bc6d03449cf'
         NETLIFY_AUTH_TOKEN = credentials('netlify-token')
         REACT_APP_VERSION = "1.0.$BUILD_ID"
     }
@@ -93,19 +93,23 @@ pipeline {
                 }
             }
 
-            environment {
-                CI_ENVIRONMENT_URL = 'STAGING_URL_TO_BE_SET'
-            }
-
             steps {
                 sh '''
                     netlify --version
                     echo "Deploying to staging. Site ID: $NETLIFY_SITE_ID"
                     netlify status
-                    netlify deploy --dir=build --json > deploy-output.json
-                    CI_ENVIRONMENT_URL=$(node-jq -r '.deploy_url' deploy-output.json)
-                    npx playwright test  --reporter=html
+                    netlify deploy \
+                    --dir=build \
+                    --site=$NETLIFY_SITE_ID \
+                    --auth=$NETLIFY_AUTH_TOKEN \
+                    --json > deploy-output.json
                 '''
+                script{
+                    def url = sh(script: "node-jq -r '.deploy_url' deploy-output.json", returnStdout: true).trim()
+                    echo "Staging URL: ${url}"
+
+                    sh "npx playwright test --base-url=${url} --reporter=html"
+                }
             }
 
             post {
@@ -133,9 +137,19 @@ pipeline {
                     netlify --version
                     echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
                     netlify status
-                    netlify deploy --dir=build --prod
-                    npx playwright test  --reporter=html
+                    netlify deploy \
+                    --dir=build \
+                    --site=$NETLIFY_SITE_ID \
+                    --auth=$NETLIFY_AUTH_TOKEN \
+                    --prod \
+                    --json > deploy-output.json
                 '''
+                script{
+                    def url = sh(script: "node-jq -r '.deploy_url' deploy-output.json", returnStdout: true).trim()
+                    echo "Production URL: ${url}"
+
+                    sh "npx playwright test --base-url=${url} --reporter=html"
+                }
             }
 
             post {
