@@ -93,7 +93,7 @@ pipeline {
         stage('Deploy Staging') {
             agent {
                 docker {
-                    image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
+                    image 'my-playwright'
                     reuseNode true
         }
     } 
@@ -103,12 +103,11 @@ pipeline {
 
     steps {
                 sh '''
-                    npm install netlify-cli node-jq
-                    node_modules/.bin/netlify --version
+                    netlify --version
                     echo "Deploying to staging. Site ID: $NETLIFY_SITE_ID"
-                    node_modules/.bin/netlify status
-                    node_modules/.bin/netlify deploy --dir=build --no-build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN --json > deploy-output.json
-                    SITE_URL=$(node_modules/.bin/node-jq -r '.deploy_url' deploy-output.json)
+                    netlify status
+                    netlify deploy --dir=build --no-build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN --json > deploy-output.json
+                    SITE_URL=$(node-jq -r '.deploy_url' deploy-output.json)
                     echo "$SITE_URL"
                     echo "================================="
                     echo "LIVE WEBSITE: $SITE_URL"
@@ -138,7 +137,7 @@ pipeline {
         stage('Deploy Prod') {
             agent {
                 docker {
-                    image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
+                    image 'my-playwright'
                     reuseNode true
         }
     }
@@ -150,11 +149,10 @@ pipeline {
     steps {
                 sh '''
                     node --version
-                    npm install netlify-cli
-                    node_modules/.bin/netlify --version
+                    netlify --version
                     echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
-                    node_modules/.bin/netlify status
-                    DEPLOY_OUTPUT=$(node_modules/.bin/netlify deploy --dir=build --prod --no-build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN)
+                    netlify status
+                    netlify deploy --dir=build --prod --no-build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN)
                     echo "$DEPLOY_OUTPUT"
                     SITE_URL=$(echo "$DEPLOY_OUTPUT" | grep "https://" | head -1)
                     echo "================================="
