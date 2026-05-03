@@ -114,13 +114,10 @@ pipeline {
                     --no-build \
                     --site=$NETLIFY_SITE_ID \
                     --auth=$NETLIFY_AUTH_TOKEN \
-                    --json > deploy-output.json 2>&1 || true
+                    --message "Jenkins Staging Deploy" \
+                    --timeout 120
 
                     echo "===== DEPLOY OUTPUT ====="
-                    cat deploy-output.json
-
-                    SITE_URL=$(node-jq -r '.deploy_url' deploy-output.json)
-                    echo "STAGING URL: $SITE_URL"
 
                     echo "===== RUNNING E2E ON STAGING ====="
                     sleep 10
@@ -161,14 +158,14 @@ pipeline {
                     netlify --version
                     netlify status
 
-                    DEPLOY_OUTPUT=$(netlify deploy \
+                    netlify deploy \
                     --dir=build \
                     --prod \
                     --no-build \
                     --site=$NETLIFY_SITE_ID \
-                    --auth=$NETLIFY_AUTH_TOKEN)
-
-                    echo "$DEPLOY_OUTPUT"
+                    --auth=$NETLIFY_AUTH_TOKEN \
+                    --message "Jenkins Prod Deploy" \
+                    --timeout 120
 
                     echo "===== RUNNING E2E ON PROD ====="
                     sleep 10
