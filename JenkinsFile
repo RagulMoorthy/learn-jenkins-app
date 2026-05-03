@@ -93,7 +93,7 @@ pipeline {
 
         stage('Deploy Staging') {
             options {
-                timeout(time: 5, unit: 'MINUTES')
+                timeout(time: 10, unit: 'MINUTES')
             }
             agent {
                 docker {
@@ -115,7 +115,7 @@ pipeline {
                     --site=$NETLIFY_SITE_ID \
                     --auth=$NETLIFY_AUTH_TOKEN \
                     --message "Jenkins Staging Deploy" \
-                    --timeout 120
+                    --json > deploy-output.json
 
                     echo "===== DEPLOY OUTPUT ====="
 
@@ -142,7 +142,7 @@ pipeline {
         }        
         stage('Deploy Prod') {
             options {
-                timeout(time: 5, unit: 'MINUTES')
+                timeout(time: 10, unit: 'MINUTES')
             }
             agent {
                 docker {
@@ -165,7 +165,7 @@ pipeline {
                     --site=$NETLIFY_SITE_ID \
                     --auth=$NETLIFY_AUTH_TOKEN \
                     --message "Jenkins Prod Deploy" \
-                    --timeout 120
+                    --json > deploy-output.json
 
                     echo "===== RUNNING E2E ON PROD ====="
                     sleep 10
